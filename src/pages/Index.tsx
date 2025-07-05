@@ -8,14 +8,7 @@ import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import LocationCapture from '@/components/LocationCapture';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  color_class: string;
-}
+import { Product } from '@/types/database';
 
 const Index = () => {
   const { toast } = useToast();
@@ -30,7 +23,7 @@ const Index = () => {
     const fetchProducts = async () => {
       try {
         const { data, error } = await supabase
-          .from('products')
+          .from('products' as any)
           .select('*')
           .eq('is_active', true)
           .order('created_at');
@@ -102,7 +95,7 @@ const Index = () => {
 
       // Insert main order
       const { data: orderData, error: orderError } = await supabase
-        .from('orders')
+        .from('orders' as any)
         .insert({
           shop_location_lat: location.lat,
           shop_location_lng: location.lng,
@@ -114,6 +107,10 @@ const Index = () => {
         .single();
 
       if (orderError) throw orderError;
+
+      if (!orderData) {
+        throw new Error('Failed to create order');
+      }
 
       // Insert order details
       const orderDetails = Object.entries(orders)
@@ -130,7 +127,7 @@ const Index = () => {
         });
 
       const { error: detailsError } = await supabase
-        .from('order_details')
+        .from('order_details' as any)
         .insert(orderDetails);
 
       if (detailsError) throw detailsError;

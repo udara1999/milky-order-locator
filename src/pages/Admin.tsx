@@ -7,31 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Package, LogOut, MapPin, Calendar, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface Order {
-  id: string;
-  shop_location_lat: number;
-  shop_location_lng: number;
-  shop_location_address: string;
-  total_amount: number;
-  total_quantity: number;
-  created_at: string;
-  order_details: Array<{
-    id: string;
-    quantity: number;
-    unit_price: number;
-    subtotal: number;
-    products: {
-      name: string;
-      description: string;
-    };
-  }>;
-}
+import { OrderWithDetails } from '@/types/database';
 
 const Admin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -52,7 +33,7 @@ const Admin = () => {
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
-        .from('orders')
+        .from('orders' as any)
         .select(`
           *,
           order_details (
