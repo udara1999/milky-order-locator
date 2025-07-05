@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import LocationCapture from '@/components/LocationCapture';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Product } from '@/types/database';
 
 const Index = () => {
@@ -23,7 +23,7 @@ const Index = () => {
     const fetchProducts = async () => {
       try {
         const { data, error } = await supabase
-          .from('products' as any)
+          .from('products')
           .select('*')
           .eq('is_active', true)
           .order('created_at');
@@ -95,7 +95,7 @@ const Index = () => {
 
       // Insert main order
       const { data: orderData, error: orderError } = await supabase
-        .from('orders' as any)
+        .from('orders')
         .insert({
           shop_location_lat: location.lat,
           shop_location_lng: location.lng,
@@ -127,7 +127,7 @@ const Index = () => {
         });
 
       const { error: detailsError } = await supabase
-        .from('order_details' as any)
+        .from('order_details')
         .insert(orderDetails);
 
       if (detailsError) throw detailsError;

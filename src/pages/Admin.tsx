@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Package, LogOut, MapPin, Calendar, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
@@ -33,7 +33,7 @@ const Admin = () => {
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
-        .from('orders' as any)
+        .from('orders')
         .select(`
           *,
           order_details (
