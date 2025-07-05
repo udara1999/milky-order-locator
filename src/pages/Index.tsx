@@ -9,6 +9,7 @@ import OrderSummary from '@/components/OrderSummary';
 import LocationCapture from '@/components/LocationCapture';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types/database';
+import {useNavigate} from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
@@ -17,6 +18,7 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch products from Supabase
   useEffect(() => {
@@ -207,7 +209,8 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <h2 className="text-3xl font-bold text-gray-900">Order Collection</h2>
+            <h2 className="text-3xl font-bold text-gray-900"
+                onClick={() => navigate('/')}>Order Collection</h2>
           </div>
         </div>
 

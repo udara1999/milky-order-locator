@@ -75,10 +75,11 @@ const OrderSummary = ({ orders, products, location, onSubmit, submitting = false
               <span className="font-medium">Rs. {formatWithCommas(subtotalAmount)}</span>
             </div>
 
+            <Separator />
+
             {/* Discount Section */}
             <div className="space-y-2">
               <Label htmlFor="discount" className="flex items-center gap-1 text-sm font-medium">
-                <Percent className="h-3 w-3" />
                 Discount Amount (Rs.)
               </Label>
               <Input
@@ -92,6 +93,8 @@ const OrderSummary = ({ orders, products, location, onSubmit, submitting = false
                 className="text-center"
               />
             </div>
+
+            <Separator />
 
             {discount > 0 && (
               <div className="flex justify-between items-center text-red-600">
