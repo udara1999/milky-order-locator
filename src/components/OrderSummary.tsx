@@ -6,18 +6,19 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, MapPin } from 'lucide-react';
 
 interface OrderSummaryProps {
-  orders: { milk: number; chocolate: number; falouda: number };
+  orders: Record<string, number>;
   products: Array<{ id: string; name: string; price: number }>;
   shopName: string;
   location: { lat: number; lng: number; address: string } | null;
   onSubmit: () => void;
+  submitting?: boolean;
 }
 
-const OrderSummary = ({ orders, products, shopName, location, onSubmit }: OrderSummaryProps) => {
-  const orderItems = products.filter(product => orders[product.id as keyof typeof orders] > 0);
+const OrderSummary = ({ orders, products, location, onSubmit, submitting = false }: OrderSummaryProps) => {
+  const orderItems = products.filter(product => (orders[product.id] || 0) > 0);
   const totalQuantity = Object.values(orders).reduce((sum, qty) => sum + qty, 0);
   const totalAmount = orderItems.reduce((sum, product) => {
-    const quantity = orders[product.id as keyof typeof orders];
+    const quantity = orders[product.id] || 0;
     return sum + (quantity * product.price);
   }, 0);
 
@@ -30,22 +31,20 @@ const OrderSummary = ({ orders, products, shopName, location, onSubmit }: OrderS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {shopName && (
+        {location && (
           <div className="p-3 bg-blue-50 rounded-lg">
-            <p className="font-medium text-gray-900">{shopName}</p>
-            {location && (
-              <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                <MapPin className="h-3 w-3" />
-                Location captured
-              </p>
-            )}
+            <p className="text-sm text-gray-600 flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              Location captured
+            </p>
+            <p className="text-xs text-gray-500 mt-1">{location.address}</p>
           </div>
         )}
 
         {orderItems.length > 0 ? (
           <div className="space-y-3">
             {orderItems.map((product) => {
-              const quantity = orders[product.id as keyof typeof orders];
+              const quantity = orders[product.id] || 0;
               return (
                 <div key={product.id} className="flex justify-between items-center">
                   <div>
@@ -74,14 +73,13 @@ const OrderSummary = ({ orders, products, shopName, location, onSubmit }: OrderS
         <Button 
           onClick={onSubmit}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
-          disabled={totalQuantity === 0 || !shopName.trim() || !location}
+          disabled={totalQuantity === 0 || !location || submitting}
         >
-          Submit Order
+          {submitting ? "Submitting..." : "Submit Order"}
         </Button>
 
-        {(!shopName.trim() || !location || totalQuantity === 0) && (
+        {(!location || totalQuantity === 0) && (
           <div className="text-sm text-gray-500 space-y-1">
-            {!shopName.trim() && <p>• Shop name required</p>}
             {!location && <p>• Location capture required</p>}
             {totalQuantity === 0 && <p>• Select at least one product</p>}
           </div>

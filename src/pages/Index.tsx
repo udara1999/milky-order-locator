@@ -1,50 +1,64 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import LocationCapture from '@/components/LocationCapture';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  color_class: string;
+}
 
 const Index = () => {
   const { toast } = useToast();
-  const [shopName, setShopName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [location, setLocation] = useState<{lat: number, lng: number, address: string} | null>(null);
-  const [orders, setOrders] = useState({
-    milk: 0,
-    chocolate: 0,
-    falouda: 0
-  });
+  const [orders, setOrders] = useState<Record<string, number>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const products = [
-    {
-      id: 'milk',
-      name: 'Regular Milk',
-      description: 'Fresh daily milk packets',
-      price: 25,
-      color: 'bg-blue-50 border-blue-200'
-    },
-    {
-      id: 'chocolate',
-      name: 'Chocolate Milk',
-      description: 'Rich chocolate flavored milk',
-      price: 30,
-      color: 'bg-amber-50 border-amber-200'
-    },
-    {
-      id: 'falouda',
-      name: 'Falouda Milk',
-      description: 'Traditional falouda flavored milk',
-      price: 35,
-      color: 'bg-pink-50 border-pink-200'
-    }
-  ];
+  // Fetch products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at');
+
+        if (error) throw error;
+        
+        setProducts(data || []);
+        
+        // Initialize orders state
+        const initialOrders: Record<string, number> = {};
+        data?.forEach(product => {
+          initialOrders[product.id] = 0;
+        });
+        setOrders(initialOrders);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          title: "Error loading products",
+          description: "Please try refreshing the page",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [toast]);
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setOrders(prev => ({
@@ -53,18 +67,9 @@ const Index = () => {
     }));
   };
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     const totalItems = Object.values(orders).reduce((sum, qty) => sum + qty, 0);
     
-    if (!shopName.trim()) {
-      toast({
-        title: "Shop name required",
-        description: "Please enter the shop name",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (totalItems === 0) {
       toast({
         title: "No items selected",
@@ -83,28 +88,88 @@ const Index = () => {
       return;
     }
 
-    // Here you would typically send the order to your backend
-    console.log('Order submitted:', {
-      shopName,
-      contactPerson,
-      phoneNumber,
-      location,
-      orders,
-      timestamp: new Date().toISOString()
-    });
+    setSubmitting(true);
 
-    toast({
-      title: "Order submitted successfully!",
-      description: `Order for ${shopName} has been recorded`,
-    });
+    try {
+      // Calculate total amount
+      const totalAmount = Object.entries(orders).reduce((sum, [productId, quantity]) => {
+        if (quantity > 0) {
+          const product = products.find(p => p.id === productId);
+          return sum + (product ? product.price * quantity : 0);
+        }
+        return sum;
+      }, 0);
 
-    // Reset form
-    setShopName('');
-    setContactPerson('');
-    setPhoneNumber('');
-    setLocation(null);
-    setOrders({ milk: 0, chocolate: 0, falouda: 0 });
+      // Insert main order
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          shop_location_lat: location.lat,
+          shop_location_lng: location.lng,
+          shop_location_address: location.address,
+          total_amount: totalAmount,
+          total_quantity: totalItems
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Insert order details
+      const orderDetails = Object.entries(orders)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([productId, quantity]) => {
+          const product = products.find(p => p.id === productId);
+          return {
+            order_id: orderData.id,
+            product_id: productId,
+            quantity,
+            unit_price: product?.price || 0,
+            subtotal: (product?.price || 0) * quantity
+          };
+        });
+
+      const { error: detailsError } = await supabase
+        .from('order_details')
+        .insert(orderDetails);
+
+      if (detailsError) throw detailsError;
+
+      toast({
+        title: "Order submitted successfully!",
+        description: `Order with ${totalItems} items has been recorded`,
+      });
+
+      // Reset form
+      setLocation(null);
+      const resetOrders: Record<string, number> = {};
+      products.forEach(product => {
+        resetOrders[product.id] = 0;
+      });
+      setOrders(resetOrders);
+
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast({
+        title: "Error submitting order",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Package className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -119,50 +184,8 @@ const Index = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left Column - Shop Details */}
+          {/* Left Column - Location & Products */}
           <div className="space-y-6">
-            {/* Shop Information */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-blue-600" />
-                  Shop Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="shopName">Shop Name *</Label>
-                  <Input
-                    id="shopName"
-                    placeholder="Enter shop name"
-                    value={shopName}
-                    onChange={(e) => setShopName(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contactPerson">Contact Person</Label>
-                  <Input
-                    id="contactPerson"
-                    placeholder="Contact person name"
-                    value={contactPerson}
-                    onChange={(e) => setContactPerson(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    placeholder="Phone number"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Location Capture */}
             <LocationCapture location={location} onLocationChange={setLocation} />
 
@@ -179,8 +202,14 @@ const Index = () => {
                   {products.map((product) => (
                     <ProductCard
                       key={product.id}
-                      product={product}
-                      quantity={orders[product.id as keyof typeof orders]}
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        description: product.description || '',
+                        price: product.price,
+                        color: product.color_class || 'bg-gray-50 border-gray-200'
+                      }}
+                      quantity={orders[product.id] || 0}
                       onQuantityChange={(qty) => handleQuantityChange(product.id, qty)}
                     />
                   ))}
@@ -193,10 +222,15 @@ const Index = () => {
           <div className="space-y-6">
             <OrderSummary
               orders={orders}
-              products={products}
-              shopName={shopName}
+              products={products.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: p.price
+              }))}
+              shopName=""
               location={location}
               onSubmit={handleSubmitOrder}
+              submitting={submitting}
             />
           </div>
         </div>
