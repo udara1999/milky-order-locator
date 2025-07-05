@@ -1,3 +1,34 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    role TEXT NOT NULL DEFAULT 'sales',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+              RETURNS trigger AS $$
+    BEGIN
+    INSERT INTO public.profiles (id, full_name, email, role)
+    VALUES (
+               NEW.id,
+               NEW.raw_user_meta_data ->> 'full_name',
+               NEW.email,
+               'sales'
+           );
+    RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user();
 
 -- Drop existing orders table to recreate with proper structure
 DROP TABLE IF EXISTS public.orders CASCADE;
@@ -15,9 +46,10 @@ CREATE TABLE public.products (
 
 -- Insert the three milk products
 INSERT INTO public.products (name, description, price, color_class) VALUES
-  ('Regular Milk', 'Fresh daily milk packets', 25.00, 'bg-blue-50 border-blue-200'),
-  ('Chocolate Milk', 'Rich chocolate flavored milk', 30.00, 'bg-amber-50 border-amber-200'),
-  ('Falouda Milk', 'Traditional falouda flavored milk', 35.00, 'bg-pink-50 border-pink-200');
+  ('Orange', 'Fresh daily Orange packets', 400.00, 'bg-blue-50 border-blue-200'),
+  ('Chocolate', 'Rich chocolate flavored milk', 400.00, 'bg-amber-50 border-amber-200'),
+  ('Nelli', 'Rich Nelli flavored milk', 400.00, 'bg-green-50 border-green-200'),
+  ('Pineapple', 'Traditional Pineapple flavored milk', 400.00, 'bg-pink-50 border-pink-200');
 
 -- Create orders table (main order information)
 CREATE TABLE public.orders (
@@ -47,53 +79,53 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_details ENABLE ROW LEVEL SECURITY;
 
 -- Products policies (public read access for sales persons)
-CREATE POLICY "Anyone can view active products" 
-  ON public.products 
-  FOR SELECT 
+CREATE POLICY "Anyone can view active products"
+  ON public.products
+  FOR SELECT
   USING (is_active = true);
 
 -- Only admins can manage products
-CREATE POLICY "Only admins can manage products" 
-  ON public.products 
-  FOR ALL 
+CREATE POLICY "Only admins can manage products"
+  ON public.products
+  FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
     )
   );
 
 -- Orders policies
-CREATE POLICY "Anyone can create orders" 
-  ON public.orders 
-  FOR INSERT 
+CREATE POLICY "Anyone can create orders"
+  ON public.orders
+  FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Only admins can view orders" 
-  ON public.orders 
-  FOR SELECT 
+CREATE POLICY "Only admins can view orders"
+  ON public.orders
+  FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
     )
   );
 
 -- Order details policies
-CREATE POLICY "Anyone can create order details" 
-  ON public.order_details 
-  FOR INSERT 
+CREATE POLICY "Anyone can create order details"
+  ON public.order_details
+  FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Only admins can view order details" 
-  ON public.order_details 
-  FOR SELECT 
+CREATE POLICY "Only admins can view order details"
+  ON public.order_details
+  FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
       AND profiles.role = 'admin'
     )
   );

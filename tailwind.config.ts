@@ -9,6 +9,16 @@ export default {
 		"./src/**/*.{ts,tsx}",
 	],
 	prefix: "",
+	safelist: [
+		'bg-yellow-50',
+		'border-yellow-200',
+		'bg-amber-50',
+		'border-amber-200',
+		'bg-lime-50',
+		'border-lime-200',
+		'bg-orange-50',
+		'border-orange-200',
+	],
 	theme: {
 		container: {
 			center: true,

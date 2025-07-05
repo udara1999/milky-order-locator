@@ -41,11 +41,7 @@ const LocationCapture = ({ location, onLocationChange }: LocationCaptureProps) =
         });
         
         setIsCapturing(false);
-        
-        toast({
-          title: "Location captured successfully",
-          description: "Shop location has been recorded",
-        });
+
       },
       (error) => {
         setIsCapturing(false);
@@ -78,45 +74,34 @@ const LocationCapture = ({ location, onLocationChange }: LocationCaptureProps) =
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-blue-600" />
-          Shop Location
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {location ? (
-          <div className="space-y-3">
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800 font-medium">Location Captured</p>
-              <p className="text-xs text-green-600 mt-1">{location.address}</p>
+            <div className="space-y-3 flex p-3 bg-green-50 border border-green-200 rounded-lg justify-between items-center">
+              <div>
+                <p className="text-sm text-green-800 font-medium">Location Captured</p>
+                <p className="text-xs text-green-600 mt-1">{location.address}</p>
+              </div>
+              <Button
+                  className="mt-0"
+                  variant="outline"
+                  onClick={() => onLocationChange(null)}
+              >
+                Clear Location
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => onLocationChange(null)}
-              className="w-full"
-            >
-              Clear Location
-            </Button>
-          </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">
-              Capture the shop's location for easy delivery routing
-            </p>
-            <Button
-              onClick={captureLocation}
-              disabled={isCapturing}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              {isCapturing ? "Capturing..." : "Capture Location"}
-            </Button>
-          </div>
+            <div className="space-y-3">
+              <Button
+                  onClick={captureLocation}
+                  disabled={isCapturing}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                {isCapturing ? "Capturing..." : "Capture Shop Location"}
+              </Button>
+            </div>
         )}
       </CardContent>
-    </Card>
   );
 };
 

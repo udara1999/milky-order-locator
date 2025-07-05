@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {formatWithCommas} from "@/hooks/use-mobile.tsx";
 
 interface Product {
   id: string;
@@ -32,12 +33,11 @@ const ProductCard = ({ product, quantity, onQuantityChange }: ProductCardProps) 
   };
 
   return (
-    <div className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${product.color} ${quantity > 0 ? 'ring-2 ring-blue-200' : ''}`}>
+    <div className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${product.color}`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{product.name}</h3>
-          <p className="text-sm text-gray-600 mb-1">{product.description}</p>
-          <p className="text-sm font-medium text-blue-600">₹{product.price} per packet</p>
+          <p className="text-sm font-medium text-blue-600">Rs. {formatWithCommas(product.price)} per packet</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
           <Button
@@ -65,13 +65,6 @@ const ProductCard = ({ product, quantity, onQuantityChange }: ProductCardProps) 
           </Button>
         </div>
       </div>
-      {quantity > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <p className="text-sm font-medium text-gray-700">
-            Subtotal: ₹{quantity * product.price}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

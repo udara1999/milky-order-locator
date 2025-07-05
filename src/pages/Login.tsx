@@ -18,7 +18,7 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Missing information",
@@ -101,11 +101,11 @@ const Login = () => {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          
+
           <div className="mt-6 pt-4 border-t text-center">
             <Button
               variant="outline"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/order')}
               className="text-sm"
             >
               Back to Order Collection

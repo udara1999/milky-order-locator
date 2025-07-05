@@ -17,3 +17,8 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+export function formatWithCommas(number) {
+  return number.toLocaleString('en-US');
+}
+

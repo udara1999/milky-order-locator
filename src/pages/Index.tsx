@@ -174,10 +174,8 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Package className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Milk Order Collection</h1>
+            <h2 className="text-3xl font-bold text-gray-900">Order Collection</h2>
           </div>
-          <p className="text-gray-600">Collect orders efficiently for your dairy business</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -187,32 +185,24 @@ const Index = () => {
             <LocationCapture location={location} onLocationChange={setLocation} />
 
             {/* Products */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-blue-600" />
-                  Select Products
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {products.map((product) => (
+            <CardContent className="p-0 border-0 bg-transparent">
+              <div className="grid gap-4">
+                {products.map((product) => (
                     <ProductCard
-                      key={product.id}
-                      product={{
-                        id: product.id,
-                        name: product.name,
-                        description: product.description || '',
-                        price: product.price,
-                        color: product.color_class || 'bg-gray-50 border-gray-200'
-                      }}
-                      quantity={orders[product.id] || 0}
-                      onQuantityChange={(qty) => handleQuantityChange(product.id, qty)}
+                        key={product.id}
+                        product={{
+                          id: product.id,
+                          name: product.name,
+                          description: product.description || '',
+                          price: product.price,
+                          color: product.color_class || 'bg-gray-50 border-gray-200'
+                        }}
+                        quantity={orders[product.id] || 0}
+                        onQuantityChange={(qty) => handleQuantityChange(product.id, qty)}
                     />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </CardContent>
           </div>
 
           {/* Right Column - Order Summary */}

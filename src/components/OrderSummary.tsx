@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, MapPin } from 'lucide-react';
+import {formatWithCommas} from "@/hooks/use-mobile.tsx";
 
 interface OrderSummaryProps {
   orders: Record<string, number>;
@@ -49,9 +50,9 @@ const OrderSummary = ({ orders, products, location, onSubmit, submitting = false
                 <div key={product.id} className="flex justify-between items-center">
                   <div>
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-gray-600">{quantity} packets × ₹{product.price}</p>
+                    <p className="text-sm text-gray-600">{quantity} packets × Rs.{formatWithCommas(product.price)}</p>
                   </div>
-                  <p className="font-medium">₹{quantity * product.price}</p>
+                  <p className="font-medium">Rs. {quantity * formatWithCommas(product.price)}</p>
                 </div>
               );
             })}
@@ -60,7 +61,7 @@ const OrderSummary = ({ orders, products, location, onSubmit, submitting = false
             
             <div className="flex justify-between items-center text-lg font-bold">
               <span>Total ({totalQuantity} packets)</span>
-              <span>₹{totalAmount}</span>
+              <span>Rs. {formatWithCommas(totalAmount)}</span>
             </div>
           </div>
         ) : (
