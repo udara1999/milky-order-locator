@@ -28,8 +28,12 @@ const Index = () => {
           .eq('is_active', true)
           .order('created_at');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
         
+        console.log('Fetched products:', data);
         setProducts(data || []);
         
         // Initialize orders state
@@ -54,13 +58,15 @@ const Index = () => {
   }, [toast]);
 
   const handleQuantityChange = (productId: string, quantity: number) => {
+    console.log('Quantity change:', productId, quantity);
     setOrders(prev => ({
       ...prev,
       [productId]: Math.max(0, quantity)
     }));
   };
 
-  const handleSubmitOrder = async () => {
+  const handleSubmitOrder = async (discount: number) => {
+    console.log('Starting order submission...');
     const totalItems = Object.values(orders).reduce((sum, qty) => sum + qty, 0);
     
     if (totalItems === 0) {
@@ -84,14 +90,24 @@ const Index = () => {
     setSubmitting(true);
 
     try {
-      // Calculate total amount
-      const totalAmount = Object.entries(orders).reduce((sum, [productId, quantity]) => {
+      // Calculate subtotal amount
+      const subtotalAmount = Object.entries(orders).reduce((sum, [productId, quantity]) => {
         if (quantity > 0) {
           const product = products.find(p => p.id === productId);
           return sum + (product ? product.price * quantity : 0);
         }
         return sum;
       }, 0);
+
+      const totalAmount = Math.max(0, subtotalAmount - discount);
+
+      console.log('Order data:', {
+        location,
+        totalAmount,
+        totalItems,
+        discount,
+        subtotalAmount
+      });
 
       // Insert main order
       const { data: orderData, error: orderError } = await supabase
@@ -101,40 +117,57 @@ const Index = () => {
           shop_location_lng: location.lng,
           shop_location_address: location.address,
           total_amount: totalAmount,
-          total_quantity: totalItems
+          total_quantity: totalItems,
+          discount_amount: discount
         })
         .select()
         .single();
 
-      if (orderError) throw orderError;
-
-      if (!orderData) {
-        throw new Error('Failed to create order');
+      if (orderError) {
+        console.error('Order insertion error:', orderError);
+        throw orderError;
       }
 
-      // Insert order details
+      if (!orderData) {
+        throw new Error('Failed to create order - no data returned');
+      }
+
+      console.log('Order created successfully:', orderData);
+
+      // Prepare order details
       const orderDetails = Object.entries(orders)
         .filter(([_, quantity]) => quantity > 0)
         .map(([productId, quantity]) => {
           const product = products.find(p => p.id === productId);
+          if (!product) {
+            throw new Error(`Product not found: ${productId}`);
+          }
           return {
             order_id: orderData.id,
             product_id: productId,
             quantity,
-            unit_price: product?.price || 0,
-            subtotal: (product?.price || 0) * quantity
+            unit_price: product.price,
+            subtotal: product.price * quantity
           };
         });
 
+      console.log('Order details to insert:', orderDetails);
+
+      // Insert order details
       const { error: detailsError } = await supabase
         .from('order_details')
         .insert(orderDetails);
 
-      if (detailsError) throw detailsError;
+      if (detailsError) {
+        console.error('Order details insertion error:', detailsError);
+        throw detailsError;
+      }
+
+      console.log('Order details inserted successfully');
 
       toast({
         title: "Order submitted successfully!",
-        description: `Order with ${totalItems} items has been recorded`,
+        description: `Order with ${totalItems} items has been recorded${discount > 0 ? ` with Rs.${discount} discount` : ''}`,
       });
 
       // Reset form
@@ -149,7 +182,7 @@ const Index = () => {
       console.error('Error submitting order:', error);
       toast({
         title: "Error submitting order",
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive"
       });
     } finally {

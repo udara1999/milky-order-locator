@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Package, LogOut, MapPin, Calendar, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderWithDetails } from '@/types/database';
+import {formatWithCommas} from "@/hooks/use-mobile.tsx";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -49,7 +50,12 @@ const Admin = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+      
+      console.log('Fetched orders:', data);
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -111,7 +117,7 @@ const Admin = () => {
         </div>
 
         {/* Statistics */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -144,9 +150,24 @@ const Admin = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    ₹{orders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)}
+                    ₹{formatWithCommas(orders.reduce((sum, order) => sum + order.total_amount, 0))}
                   </p>
                   <p className="text-gray-600">Total Revenue</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <span className="text-red-600 font-bold">%</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    ₹{formatWithCommas(orders.reduce((sum, order) => sum + (order.discount_amount || 0), 0))}
+                  </p>
+                  <p className="text-gray-600">Total Discounts</p>
                 </div>
               </div>
             </CardContent>
@@ -177,8 +198,11 @@ const Admin = () => {
                           </span>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg">₹{order.total_amount}</p>
+                          <p className="font-bold text-lg">₹{formatWithCommas(order.total_amount)}</p>
                           <p className="text-sm text-gray-600">{order.total_quantity} items</p>
+                          {order.discount_amount && order.discount_amount > 0 && (
+                            <p className="text-sm text-red-600">Discount: ₹{formatWithCommas(order.discount_amount)}</p>
+                          )}
                         </div>
                       </div>
                       
@@ -190,7 +214,7 @@ const Admin = () => {
                               <div key={detail.id} className="text-sm">
                                 <span className="font-medium">{detail.products.name}</span>
                                 <span className="text-gray-600 ml-2">
-                                  {detail.quantity} × ₹{detail.unit_price} = ₹{detail.subtotal}
+                                  {detail.quantity} × ₹{formatWithCommas(detail.unit_price)} = ₹{formatWithCommas(detail.subtotal)}
                                 </span>
                               </div>
                             ))}

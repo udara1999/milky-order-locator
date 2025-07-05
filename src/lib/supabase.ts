@@ -42,6 +42,7 @@ export interface Database {
           shop_location_address: string | null;
           total_amount: number;
           total_quantity: number;
+          discount_amount: number;
           created_at: string;
         };
         Insert: {
@@ -51,6 +52,7 @@ export interface Database {
           shop_location_address?: string | null;
           total_amount: number;
           total_quantity: number;
+          discount_amount?: number;
           created_at?: string;
         };
         Update: {
@@ -60,6 +62,7 @@ export interface Database {
           shop_location_address?: string | null;
           total_amount?: number;
           total_quantity?: number;
+          discount_amount?: number;
           created_at?: string;
         };
       };
